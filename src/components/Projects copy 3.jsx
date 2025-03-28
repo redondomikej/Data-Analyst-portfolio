@@ -2,31 +2,34 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { auth, signIn, logOut, db } from "../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, addDoc, deleteDoc, doc, updateDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, deleteDoc, doc, updateDoc,getDocs  } from "firebase/firestore";
 
 const adminEmails = ["Jamilmendez1016@gmail.com", "redondomikej@gmail.com"];
 
 export default function Projects() {
   const [user, setUser] = useState(null);
-  const [projects, setProjects] = useState([]);
-  
+  const [projects, setProjects] = useState([
+    {
+      title: "Sales Forecasting Dashboard",
+      description: "Developed a dashboard using Python and Power BI to predict sales trends.",
+      link: "https://github.com/Jamil1016/Projects",
+    },
+    {
+      title: "Customer Segmentation Analysis",
+      description: "Used clustering algorithms to categorize customers for targeted marketing.",
+      link: "https://github.com/Jamil1016/Projects",
+    },
+    {
+      title: "Supply Chain Optimization",
+      description: "Analyzed logistics data to minimize costs and improve efficiency.",
+      link: "https://github.com/Jamil1016/Projects",
+    },
+  ]);
+
   useEffect(() => {
     onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
-
-    // Fetch projects from Firestore
-    const fetchProjects = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "projects"));
-        const projectsList = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        setProjects(projectsList);
-      } catch (error) {
-        console.error("Error fetching projects: ", error);
-      }
-    };
-
-    fetchProjects();
   }, []);
 
   const isAdmin = user && adminEmails.includes(user.email);
@@ -40,10 +43,10 @@ export default function Projects() {
     if (title && description && link) {
       try {
         // Add project to Firestore
-        const docRef = await addDoc(collection(db, "projects"), { title, description, link });
+        await addDoc(collection(db, "projects"), { title, description, link });
 
-        // Update state with new project
-        setProjects([...projects, { title, description, link, id: docRef.id }]);
+        // Update state
+        setProjects([...projects, { title, description, link }]);
       } catch (error) {
         console.error("Error adding project: ", error);
       }
@@ -114,7 +117,7 @@ export default function Projects() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project, index) => (
           <motion.div
-            key={project.id}  // Using project id for key
+            key={index}
             className="p-6 bg-[#1B263B] rounded-lg shadow-lg border border-gray-700 hover:border-cyan-400 transition duration-300"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

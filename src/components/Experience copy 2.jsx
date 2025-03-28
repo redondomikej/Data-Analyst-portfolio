@@ -2,30 +2,39 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { auth, signIn, logOut, db } from "../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, deleteDoc, doc, updateDoc } from "firebase/firestore";
 
 const adminEmails = ["Jamilmendez1016@gmail.com", "redondomikej@gmail.com"];
 
 export default function Experience() {
   const [user, setUser] = useState(null);
-  const [experiences, setExperiences] = useState([]);
+  const [experiences, setExperiences] = useState([
+    {
+      title: "Demand Planning Analyst",
+      company: "Emerson Electric (Asia) Ltd. ROHQ",
+      dates: "June 2023 – Present",
+      responsibilities: [
+        "Compiled reports detailing demand plans and forecasts.",
+        "Developed custom dashboards to deliver actionable insights.",
+        "Automated reports using Power BI & Power Query.",
+      ],
+    },
+    {
+      title: "Quality Assurance Engineer",
+      company: "Citizen Finedevice Philippines Corporation",
+      dates: "Nov 2020 – May 2023",
+      responsibilities: [
+        "Led root cause analysis for product quality improvements.",
+        "Developed Excel tools to automate data processing.",
+        "Increased process yield by 2.7% through continuous improvement.",
+      ],
+    },
+  ]);
 
   useEffect(() => {
-    // Listen for user authentication state change
     onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
-
-    // Set up Firestore real-time listener for the experiences collection
-    const unsubscribe = onSnapshot(collection(db, "experiences"), (snapshot) => {
-      const experienceData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setExperiences(experienceData);
-    });
-
-    return () => unsubscribe(); // Clean up listener when component is unmounted
   }, []);
 
   const isAdmin = user && adminEmails.includes(user.email);
@@ -41,6 +50,9 @@ export default function Experience() {
       try {
         // Add experience to Firestore
         await addDoc(collection(db, "experiences"), { title, company, dates, responsibilities });
+
+        // Update state
+        setExperiences([...experiences, { title, company, dates, responsibilities }]);
       } catch (error) {
         console.error("Error adding experience: ", error);
       }
@@ -52,6 +64,9 @@ export default function Experience() {
     try {
       // Delete experience from Firestore
       await deleteDoc(doc(db, "experiences", experienceId));
+
+      // Update local state
+      setExperiences(experiences.filter((experience) => experience.id !== experienceId));
     } catch (error) {
       console.error("Error deleting experience: ", error);
     }
@@ -69,6 +84,11 @@ export default function Experience() {
         // Update experience in Firestore
         const experienceRef = doc(db, "experiences", experienceId);
         await updateDoc(experienceRef, { title, company, dates, responsibilities });
+
+        // Update local state
+        setExperiences(experiences.map(exp =>
+          exp.id === experienceId ? { ...exp, title, company, dates, responsibilities } : exp
+        ));
       } catch (error) {
         console.error("Error updating experience: ", error);
       }
@@ -100,7 +120,7 @@ export default function Experience() {
         <div className="mt-10 space-y-6">
           {experiences.map((experience, index) => (
             <motion.div
-              key={experience.id}
+              key={index}
               className="px-6 max-w-3xl mx-auto border-l-4 border-cyan-400 pl-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

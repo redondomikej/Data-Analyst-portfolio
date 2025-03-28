@@ -1,33 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { auth, signIn, logOut, db } from "../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, deleteDoc, doc, updateDoc } from "firebase/firestore";
 
 const adminEmails = ["Jamilmendez1016@gmail.com", "redondomikej@gmail.com"];
 
 export default function Awards() {
   const [user, setUser] = useState(null);
-  const [awards, setAwards] = useState([]);
+  const [awards, setAwards] = useState([
+    { title: "Top Management’s Choice Award", date: "Dec 2022", description: "" },
+    { title: "Major Kaizen Owner Award", date: "May 2023", description: "4.9% defect reduction" },
+    { title: "3rd Run in AVIM", date: "Nov 2022", description: "12.8% Salvage Rate Improvement" },
+  ]);
 
-  // Listen for authentication state changes
   useEffect(() => {
     onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
-  }, []);
-
-  // Listen for real-time changes to the awards collection
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "awards"), (snapshot) => {
-      const fetchedAwards = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setAwards(fetchedAwards);
-    });
-
-    // Cleanup listener when component unmounts
-    return () => unsubscribe();
   }, []);
 
   const isAdmin = user && adminEmails.includes(user.email);
@@ -42,6 +31,9 @@ export default function Awards() {
       try {
         // Add award to Firestore
         await addDoc(collection(db, "awards"), { title, date, description });
+
+        // Update state
+        setAwards([...awards, { title, date, description }]);
       } catch (error) {
         console.error("Error adding award: ", error);
       }
@@ -53,6 +45,9 @@ export default function Awards() {
     try {
       // Delete award from Firestore
       await deleteDoc(doc(db, "awards", awardId));
+
+      // Update local state
+      setAwards(awards.filter((award) => award.id !== awardId));
     } catch (error) {
       console.error("Error deleting award: ", error);
     }
@@ -69,6 +64,11 @@ export default function Awards() {
         // Update award in Firestore
         const awardRef = doc(db, "awards", awardId);
         await updateDoc(awardRef, { title, date, description });
+
+        // Update local state
+        setAwards(awards.map((award) =>
+          award.id === awardId ? { ...award, title, date, description } : award
+        ));
       } catch (error) {
         console.error("Error updating award: ", error);
       }
@@ -99,8 +99,8 @@ export default function Awards() {
 
         <div className="mt-10 px-10">
           <ul className="space-y-4 text-gray-300">
-            {awards.map((award) => (
-              <li key={award.id} className="relative">
+            {awards.map((award, index) => (
+              <li key={index} className="relative">
                 <span>🏆 <b>{award.title}</b> - {award.date}</span>
                 {isAdmin && (
                   <div className="absolute top-0 right-0 flex space-x-2">

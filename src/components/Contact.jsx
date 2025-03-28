@@ -1,21 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { auth, signIn, logOut, db } from "../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, addDoc, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from "firebase/firestore";
 
 const adminEmails = ["Jamilmendez1016@gmail.com", "redondomikej@gmail.com"];
 
 export default function Contact() {
   const [user, setUser] = useState(null);
-  const [contacts, setContacts] = useState([
-    { id: 1, title: "Email", value: "Jamilmendez1016@gmail.com" },
-    { id: 2, title: "Phone", value: "09939155422" },
-  ]);
+  const [contacts, setContacts] = useState([]);
 
+  // Listen for authentication state changes
   useEffect(() => {
     onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
+  }, []);
+
+  // Listen for real-time changes to the contacts collection
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "contacts"), (snapshot) => {
+      const fetchedContacts = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setContacts(fetchedContacts);
+    });
+
+    // Cleanup listener when component unmounts
+    return () => unsubscribe();
   }, []);
 
   const isAdmin = user && adminEmails.includes(user.email);
@@ -29,9 +41,6 @@ export default function Contact() {
       try {
         // Add contact to Firestore
         await addDoc(collection(db, "contacts"), { title, value });
-
-        // Update state
-        setContacts([...contacts, { title, value }]);
       } catch (error) {
         console.error("Error adding contact: ", error);
       }
@@ -43,9 +52,6 @@ export default function Contact() {
     try {
       // Delete contact from Firestore
       await deleteDoc(doc(db, "contacts", contactId));
-
-      // Update local state
-      setContacts(contacts.filter((contact) => contact.id !== contactId));
     } catch (error) {
       console.error("Error deleting contact: ", error);
     }
@@ -62,13 +68,6 @@ export default function Contact() {
         // Update contact in Firestore
         const contactRef = doc(db, "contacts", contactId);
         await updateDoc(contactRef, { title: newTitle, value: newValue });
-
-        // Update local state
-        setContacts(
-          contacts.map((contact) =>
-            contact.id === contactId ? { ...contact, title: newTitle, value: newValue } : contact
-          )
-        );
       } catch (error) {
         console.error("Error updating contact: ", error);
       }
