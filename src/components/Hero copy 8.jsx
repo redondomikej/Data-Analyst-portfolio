@@ -58,7 +58,7 @@ export default function Hero() {
       <p className="mt-4 text-gray-300">
         You can request an updated resume in my{" "}
         <motion.a
-          href="#contact" // Change this to #contact
+          href="contact"
           className="text-cyan-400 underline"
           whileHover={{
             textShadow: "0px 0px 8px rgba(34, 211, 238, 0.8)",
@@ -69,7 +69,7 @@ export default function Hero() {
         </motion.a>.  
         Also, check out my{" "}
         <motion.a
-          href="#projects" // Change this to #projects
+          href="projects"
           className="text-green-400 underline"
           whileHover={{
             textShadow: "0px 0px 8px rgba(34, 211, 100, 0.8)",
